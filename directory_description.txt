@@ -1,0 +1,7 @@
+api/: Chứa các route API của từng module, tách biệt theo domain (user, product, auth, ...)
+config/: Chứa cấu hình quan trọng (config, bảo mật, ...)
+models/: Chứa các model database (dùng SQLAlchemy hoặc MongoDB)
+schemas/: Chứa schema validation (dùng Pydantic nếu dùng FastAPI)
+services/: Chứa các logic xử lý nghiệp vụ
+database/: Chứa kết nối database
+.env: Chứa biến môi trường như DB_URL, SECRET_KEY

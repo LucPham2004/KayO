@@ -19,3 +19,7 @@ async def get_message_by_id(message_id: str):
 @message_bp.get("/all/{conv_id}", response_model=List[MessageResponseSchema])
 async def get_messages(conv_id: str):
     return await MessageService.get_messages(conv_id)
+
+@message_bp.get("/history/{conv_id}", response_model=List[MessageResponseSchema])
+async def get_history(conv_id: str):
+    return await MessageService.get_history(conv_id)

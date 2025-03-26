@@ -12,5 +12,9 @@ async def create_conversation(conv: CreateConversationSchema):
     return await ConversationService.create_conversation(conv)
 
 @conv_bp.get("/all/{user_id}", response_model=List[ConversationResponseSchema])
-async def get_conversations(user_id: str):
-    return await ConversationService.get_conversations(user_id)
+async def get_conversations_by_user(user_id: str):
+    return await ConversationService.get_conversations_by_user(user_id)
+
+@conv_bp.get("/all}", response_model=List[ConversationResponseSchema])
+async def get_conversations():
+    return await ConversationService.get_conversations()

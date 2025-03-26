@@ -21,6 +21,7 @@ class MessageService:
 
         if new_message:
             new_message["_id"] = str(new_message["_id"])
+            new_message["conversation_id"] = str(new_message["conversation_id"])
 
         return new_message
 
@@ -48,9 +49,30 @@ class MessageService:
             raise HTTPException(status_code=404, detail="Conversation not found")
 
         db_messages: Collection = db["messages"]
-        messages = db_messages.find({"conversation_id": conv_id}).to_list(length=None)
+        messages = db_messages.find({"conversation_id": conv_id}).sort("created_at", -1).to_list(length=None)
 
         for message in messages:
             message["_id"] = str(message["_id"])
+            message["conversation_id"] = str(message["conversation_id"])
+
+        return messages
+
+    # 10 tin nhắn gần nhất trong conversation
+    @staticmethod
+    async def get_history(conv_id: str):
+        db = MongoDB.get_db()
+        conversations: Collection = db["conversations"]
+
+        conversation = conversations.find_one({"_id": conv_id})
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+
+        db_messages: Collection = db["messages"]
+        messages = (db_messages.find({"conversation_id": conv_id})
+                    .sort("created_at", -1).limit(10).to_list(length=10))
+
+        for message in messages:
+            message["_id"] = str(message["_id"])
+            message["conversation_id"] = str(message["conversation_id"])
 
         return messages

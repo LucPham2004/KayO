@@ -25,7 +25,7 @@ class ConversationService:
         return new_conv
 
     @staticmethod
-    async def get_conversations(user_id: str):
+    async def get_conversations_by_user(user_id: str):
         db = MongoDB.get_db()
         users: Collection = db["users"]
 
@@ -36,7 +36,18 @@ class ConversationService:
         db_conversations: Collection = db["conversations"]
         user_conversations = db_conversations.find({"user_id": user_id}).to_list(length=None)
 
-        for convo in user_conversations:
-            convo["_id"] = str(convo["_id"])
+        for conv in user_conversations:
+            conv["_id"] = str(conv["_id"])
 
         return user_conversations
+
+    @staticmethod
+    async def get_conversations():
+        db = MongoDB.get_db()
+        db_conversations: Collection = db["conversations"]
+        conversations = db_conversations.find().to_list(length=None)
+
+        for conv in conversations:
+            conv["_id"] = str(conv["_id"])
+
+        return conversations

@@ -3,7 +3,7 @@ from typing import Optional
 from bson import ObjectId
 from pydantic import BaseModel, Field
 
-from app.models.User import PyObjectId
+from app.models import PyObjectId
 
 
 class MessageModel(BaseModel):
@@ -15,9 +15,3 @@ class MessageModel(BaseModel):
 
     class Config:
         json_encoders = {ObjectId: str}
-
-# Model khi tạo tin nhắn mới
-class CreateMessageModel(BaseModel):
-    conversation_id: PyObjectId
-    question: str
-    answer: str

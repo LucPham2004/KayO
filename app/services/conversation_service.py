@@ -31,7 +31,7 @@ class ConversationService:
 
         user = users.find_one({"_id": user_id})
         if not user:
-            raise HTTPException(status_code=401, detail="Invalid credentials")
+            raise HTTPException(status_code=404, detail="User not found")
 
         db_conversations: Collection = db["conversations"]
         user_conversations = db_conversations.find({"user_id": user_id}).to_list(length=None)

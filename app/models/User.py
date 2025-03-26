@@ -11,6 +11,7 @@ class UserModel(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id")
     username: str
     email: EmailStr
+    password: str
     avatar_url: Optional[str] = None
     created_at: Optional[str]
 
@@ -18,8 +19,3 @@ class UserModel(BaseModel):
         json_encoders = {ObjectId: str}
 
 
-# Model khi tạo user mới
-class CreateUserModel(BaseModel):
-    username: str
-    email: EmailStr
-    avatar_url: Optional[str] = None

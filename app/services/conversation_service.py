@@ -13,10 +13,10 @@ class ConversationService:
         db = MongoDB.get_db()
         conversations: Collection = db["conversations"]
 
-        conv = conv.model_dump()
-        conv["created_at"] = datetime.now().isoformat()
+        conv_dict = conv.model_dump()
+        conv_dict["created_at"] = datetime.now().isoformat()
 
-        result = conversations.insert_one(conv)
+        result = conversations.insert_one(conv_dict)
         new_conv = await conversations.find_one({"_id": result.inserted_id})
 
         if new_conv:

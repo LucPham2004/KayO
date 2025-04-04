@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from bson import ObjectId
 from fastapi import HTTPException
 from pymongo.collection import Collection
 
@@ -9,7 +10,7 @@ from app.schemas.conversation_schema import CreateConversationSchema
 
 class ConversationService:
     @staticmethod
-    async def create_conversation(conv: CreateConversationSchema):
+    def create_conversation(conv: CreateConversationSchema):
         db = MongoDB.get_db()
         conversations: Collection = db["conversations"]
 
@@ -17,7 +18,7 @@ class ConversationService:
         conv_dict["created_at"] = datetime.now().isoformat()
 
         result = conversations.insert_one(conv_dict)
-        new_conv = await conversations.find_one({"_id": result.inserted_id})
+        new_conv = conversations.find_one({"_id": result.inserted_id})
 
         if new_conv:
             new_conv["_id"] = str(new_conv["_id"])
@@ -25,11 +26,17 @@ class ConversationService:
         return new_conv
 
     @staticmethod
-    async def get_conversations_by_user(user_id: str):
+    def get_conversations_by_user(user_id: str):
         db = MongoDB.get_db()
         users: Collection = db["users"]
 
-        user = users.find_one({"_id": user_id})
+        # Chuyển `id` sang ObjectId
+        try:
+            user_obj_id = ObjectId(user_id)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid ID format")
+
+        user = users.find_one({"_id": user_obj_id})
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
@@ -42,7 +49,7 @@ class ConversationService:
         return user_conversations
 
     @staticmethod
-    async def get_conversations():
+    def get_conversations():
         db = MongoDB.get_db()
         db_conversations: Collection = db["conversations"]
         conversations = db_conversations.find().to_list(length=None)

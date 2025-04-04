@@ -20,7 +20,7 @@ class Question(BaseModel):
     question: str
 
 @chat_bp.post("/ask")
-async def ask_question(q: Question):
+def ask_question(q: Question):
     try:
         response = model.generate_content(q.question)
         answer = response.text
@@ -29,10 +29,10 @@ async def ask_question(q: Question):
         raise HTTPException(status_code=500, detail=str(e))
 
 @chat_bp.post("/chat")
-async def chat_with_gemini(q: Question):
+def chat_with_gemini(q: Question):
     try:
         # Lấy lịch sử 10 tin nhắn gần nhất của cuộc hội thoại
-        history = await MessageService.get_history(q.conv_id)
+        history = MessageService.get_history(q.conv_id)
 
         # Chuyển lịch sử tin nhắn thành một chuỗi hội thoại
         history_str = "\n".join([f"{msg['question']} → {msg['answer']}" for msg in history])
@@ -43,7 +43,7 @@ async def chat_with_gemini(q: Question):
         answer = response.text
 
         # Lưu tin nhắn vào db
-        new_message = await MessageService.create_message(
+        new_message = MessageService.create_message(
             CreateMessageSchema(conversation_id=q.conv_id, question=q.question, answer=answer)
         )
 

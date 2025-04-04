@@ -1,3 +1,4 @@
+from bson import ObjectId
 from fastapi import HTTPException
 from pymongo.collection import Collection
 
@@ -6,18 +7,26 @@ from app.config.database import MongoDB
 
 class UserService:
     @staticmethod
-    async def get_user_by_id(id: str):
+    def get_user_by_id(id: str):
         db = MongoDB.get_db()
         users: Collection = db["users"]
 
-        user = users.find_one({"_id": id})
+        # Chuyển `id` sang ObjectId
+        try:
+            obj_id = ObjectId(id)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid user ID format")
+
+        user = users.find_one({"_id": obj_id})
         if not user:
             raise HTTPException(status_code=404, detail="User with id: " + id + " not found")
+
+        user["_id"] = str(user["_id"])
 
         return user
 
     @staticmethod
-    async def get_users():
+    def get_users():
         db = MongoDB.get_db()
         db_users: Collection = db["users"]
 

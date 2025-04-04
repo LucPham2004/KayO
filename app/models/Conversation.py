@@ -12,6 +12,7 @@ class ConversationModel(BaseModel):
     messages: List[PyObjectId]
     name: Optional[str] = None
     created_at: Optional[str]
+    update_at: Optional[str]
 
     class Config:
         json_encoders = {ObjectId: str}

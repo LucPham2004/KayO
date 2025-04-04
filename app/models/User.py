@@ -14,6 +14,7 @@ class UserModel(BaseModel):
     password: str
     avatar_url: Optional[str] = None
     created_at: Optional[str]
+    update_at: Optional[str]
 
     class Config:
         json_encoders = {ObjectId: str}

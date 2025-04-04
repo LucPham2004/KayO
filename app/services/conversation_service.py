@@ -26,6 +26,25 @@ class ConversationService:
         return new_conv
 
     @staticmethod
+    def get_conversation_by_id(id: str):
+        db = MongoDB.get_db()
+        conversations: Collection = db["conversations"]
+
+        # Chuyển `id` sang ObjectId
+        try:
+            obj_id = ObjectId(id)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid conversation ID format")
+
+        conversation = conversations.find_one({"_id": obj_id})
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Conversation with id: " + id + " not found")
+
+        conversation["_id"] = str(conversation["_id"])
+
+        return conversation
+
+    @staticmethod
     def get_conversations_by_user(user_id: str):
         db = MongoDB.get_db()
         users: Collection = db["users"]
@@ -58,3 +77,39 @@ class ConversationService:
             conv["_id"] = str(conv["_id"])
 
         return conversations
+
+    @staticmethod
+    def update_conversation(id: str, update_data: dict):
+        db = MongoDB.get_db()
+        conversations: Collection = db["conversations"]
+
+        try:
+            obj_id = ObjectId(id)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid conversation ID format")
+
+        update_data["updated_at"] = datetime.now().isoformat()
+
+        result = conversations.update_one({"_id": obj_id}, {"$set": update_data})
+
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail=f"Conversation with id: {id} not found")
+
+        return ConversationService.get_conversation_by_id(id)
+
+    @staticmethod
+    def delete_conversation(id: str):
+        db = MongoDB.get_db()
+        conversations: Collection = db["conversations"]
+
+        try:
+            obj_id = ObjectId(id)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid conversation ID format")
+
+        result = conversations.delete_one({"_id": obj_id})
+
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail=f"Conversation with id: {id} not found")
+
+        return {"message": "Conversation deleted successfully"}

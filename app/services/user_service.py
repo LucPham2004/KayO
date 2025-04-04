@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from bson import ObjectId
 from fastapi import HTTPException
 from pymongo.collection import Collection
@@ -36,3 +38,39 @@ class UserService:
             user["_id"] = str(user["_id"])
 
         return users
+
+    @staticmethod
+    def update_user(id: str, update_data: dict):
+        db = MongoDB.get_db()
+        users: Collection = db["users"]
+
+        try:
+            obj_id = ObjectId(id)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid user ID format")
+
+        update_data["updated_at"] = datetime.now().isoformat()
+
+        result = users.update_one({"_id": obj_id}, {"$set": update_data})
+
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail=f"User with id: {id} not found")
+
+        return UserService.get_user_by_id(id)
+
+    @staticmethod
+    def delete_user(id: str):
+        db = MongoDB.get_db()
+        users: Collection = db["users"]
+
+        try:
+            obj_id = ObjectId(id)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid user ID format")
+
+        result = users.delete_one({"_id": obj_id})
+
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail=f"User with id: {id} not found")
+
+        return {"message": "User deleted successfully"}

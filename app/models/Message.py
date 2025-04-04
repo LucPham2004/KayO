@@ -12,6 +12,7 @@ class MessageModel(BaseModel):
     question: str
     answer: str
     created_at: Optional[str]
+    update_at: Optional[str]
 
     class Config:
         json_encoders = {ObjectId: str}

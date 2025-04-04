@@ -16,6 +16,13 @@ class UserResponseSchema(BaseModel):
     email: str
     avatar_url: Optional[str] = None
     created_at: Optional[str]
+    update_at: Optional[str]
 
     class Config:
         json_encoders = {ObjectId: str}
+
+
+class UpdateUserSchema(BaseModel):
+    email: str | None = None
+    avatar_url: str | None = None
+    update_at: Optional[str]

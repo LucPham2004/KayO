@@ -95,3 +95,39 @@ class MessageService:
             message["conversation_id"] = str(message["conversation_id"])
 
         return messages
+
+    @staticmethod
+    def update_message(message_id: str, update_data: dict):
+        db = MongoDB.get_db()
+        messages: Collection = db["messages"]
+
+        try:
+            message_obj_id = ObjectId(message_id)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid message ID format")
+
+        update_data["updated_at"] = datetime.now().isoformat()
+
+        result = messages.update_one({"_id": message_obj_id}, {"$set": update_data})
+
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail=f"Message with id: {message_id} not found")
+
+        return MessageService.get_message_by_id(message_id)
+
+    @staticmethod
+    def delete_message(message_id: str):
+        db = MongoDB.get_db()
+        messages: Collection = db["messages"]
+
+        try:
+            message_obj_id = ObjectId(message_id)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid message ID format")
+
+        result = messages.delete_one({"_id": message_obj_id})
+
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail=f"Message with id: {message_id} not found")
+
+        return {"message": "Message deleted successfully"}

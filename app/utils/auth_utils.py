@@ -1,6 +1,11 @@
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
 from jose import jwt
+import random
+import string
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 from app.config import Config
 
@@ -26,3 +31,36 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
+def generate_otp(length=6):
+    return ''.join(random.choices(string.digits, k=length))
+
+def send_otp_email(email: str, otp: str):
+    msg = MIMEMultipart()
+    msg['From'] = Config.SMTP_USERNAME
+    msg['To'] = email
+    msg['Subject'] = "Yêu cầu đặt lại mật khẩu"
+
+    body = f"""
+    <html>
+        <body>
+            <h2>Yêu cầu đặt lại mật khẩu</h2>
+            <p>Mã OTP của bạn là: <strong>{otp}</strong></p>
+            <p>Mã OTP sẽ hết hạn trong 3 phút.</p>
+            <p>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
+        </body>
+    </html>
+    """
+    
+    msg.attach(MIMEText(body, 'html'))
+
+    try:
+        server = smtplib.SMTP(Config.SMTP_HOST, Config.SMTP_PORT)
+        server.starttls()
+        server.login(Config.SMTP_USERNAME, Config.SMTP_PASSWORD)
+        server.send_message(msg)
+        server.quit()
+        return True
+    except Exception as e:
+        print(f"Gửi OTP thất bại: {str(e)}")
+        return False

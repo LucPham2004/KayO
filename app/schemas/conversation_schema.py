@@ -16,16 +16,8 @@ class ConversationResponseSchema(BaseModel):
     update_at: Optional[str]
 
     class Config:
-        json_encoders = {ObjectId: str}  # Đảm bảo ObjectId được chuyển thành string
-        schema_extra = {
-            "example": {
-                "_id": "605c72f1e3b3c0c7a2f3c123",
-                "user_id": "605c72f1e3b3c0c7a2f3c456",
-                "name": "Chat với AI",
-                "created_at": "2025-03-20T12:00:00",
-                "update_at": "2025-03-20T12:00:00"
-            }
-        }
+        json_encoders = {ObjectId: str}
+        allow_population_by_field_name = True
 
 class UpdateConversationSchema(BaseModel):
     name: str | None = None

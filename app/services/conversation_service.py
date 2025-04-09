@@ -16,6 +16,7 @@ class ConversationService:
 
         conv_dict = conv.model_dump()
         conv_dict["created_at"] = datetime.now().isoformat()
+        conv_dict["update_at"] = datetime.now().isoformat()
 
         result = conversations.insert_one(conv_dict)
         new_conv = conversations.find_one({"_id": result.inserted_id})

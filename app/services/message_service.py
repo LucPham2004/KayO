@@ -16,6 +16,7 @@ class MessageService:
 
         message_dict = message.model_dump()
         message_dict["created_at"] = datetime.now().isoformat()
+        message_dict["update_at"] = datetime.now().isoformat()
 
         result = messages.insert_one(message_dict)
         new_message = messages.find_one({"_id": result.inserted_id})

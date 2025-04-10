@@ -1,3 +1,4 @@
+import asyncio
 from typing import AsyncGenerator
 
 import google.generativeai as genai
@@ -61,16 +62,24 @@ async def stream_chat_with_gemini(q: Question):
         history = MessageService.get_history(q.conv_id)
 
         # Chuyển lịch sử tin nhắn thành một chuỗi hội thoại
-        history_str = "\n".join([f"{msg['question']} → {msg['answer']}" for msg in history])
+        gemini_history = []
+        for msg in history:
+            gemini_history.append({"role": "user", "parts": [msg["question"]]})
+            gemini_history.append({"role": "model", "parts": [msg["answer"]]})
 
-        # Gửi lịch sử + câu hỏi mới
-        prompt = f"{history_str}\nUser: {q.question}\nAI:"
+        chat = model.start_chat(history=gemini_history)
+
+        # Gửi câu hỏi và lấy toàn bộ câu trả lời
+        response = chat.send_message(q.question)
+        full_answer = response.text
+
+        # Gửi từng ký tự một, mô phỏng typing ~30 ký tự/giây
         async def generate():
-            full_answer = ""
-            async for chunk in generate_response_stream(prompt):
-                full_answer += chunk
-                yield chunk.encode("utf-8")
+            for char in full_answer:
+                yield char.encode("utf-8")
+                await asyncio.sleep(1 / 200)
 
+            # Lưu lại câu hỏi và câu trả lời
             MessageService.create_message(
                 CreateMessageSchema(conversation_id=q.conv_id, question=q.question, answer=full_answer)
             )

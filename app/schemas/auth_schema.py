@@ -26,15 +26,22 @@ class UserSchema(BaseModel):
 
 class LoginResponseSchema(BaseModel):
     message: str
-    user: UserSchema
-    access_token: str
+    user: Optional[UserSchema] = None
+    access_token: Optional[str] = None
+    is_valid: bool
+
+class RegisterResponseSchema(BaseModel):
+    message: str
+    _id: Optional[str] = None
+    is_valid: bool
 
 class ForgotPasswordSchema(BaseModel):
     email: EmailStr
 
 class ForgotPasswordResponseSchema(BaseModel):
     message: str
-
+    is_valid: bool
+    
 class VerifyOTPSchema(BaseModel):
     email: EmailStr
     otp: str
@@ -49,11 +56,6 @@ class ResetPasswordSchema(BaseModel):
     newPassword: str = Field(..., min_length=6)
     confirmPassword: str = Field(..., min_length=6)
 
-    @model_validator(mode='after')
-    def check_passwords_match(self):
-        if self.newPassword != self.confirmPassword:
-            raise ValueError('Mật khẩu không khớp')
-        return self
-
 class ResetPasswordResponseSchema(BaseModel):
     message: str
+    is_valid: bool

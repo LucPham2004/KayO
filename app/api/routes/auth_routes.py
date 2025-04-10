@@ -15,12 +15,12 @@ from app.services.auth_service import UserService
 auth_bp = APIRouter()
 
 @auth_bp.post("/register")
-def register(login: RegisterSchema):
-    return UserService.register(login)
+def register(request: RegisterSchema):
+    return UserService.register(request)
 
 @auth_bp.post("/login", response_model= LoginResponseSchema)
-def login(register: LoginSchema):
-    return UserService.login(register)
+def login(request: LoginSchema):
+    return UserService.login(request)
 
 @auth_bp.post("/forgot-password", response_model=ForgotPasswordResponseSchema)
 def forgot_password(request: ForgotPasswordSchema):

@@ -27,27 +27,33 @@ class UserService:
         users: Collection = db["users"]
 
         user = users.find_one({"email": login.email})
-        if not user or not verify_password(login.password, user['password']):
-            raise HTTPException(status_code=401, detail="Email or password incorrect!")
 
-        # Chuyển _id thành string và loại bỏ password khỏi phản hồi
+        if not user or not verify_password(login.password, user['password']):
+            return {
+                "message": "Email hoặc mật khẩu không chính xác!",
+                "user": None,
+                "access_token": None,
+                "is_valid": False
+            }
+
+        # Tạo dữ liệu user để trả về
         user["_id"] = str(user["_id"])
-        user.pop("password", None)
+        user.pop("password")
 
         # Tạo JWT token
         token_data = {
-            "sub": user["_id"],  # Subject là user_id
+            "sub": user["_id"],
             "email": user["email"],
             "username": user["username"]
         }
 
         access_token_expires = timedelta(minutes=30)
-        access_token = create_access_token( token_data, access_token_expires)
-
+        access_token = create_access_token(token_data, access_token_expires)
         return {
-            "message": "Login successfully",
+            "message": "Đăng nhập thành công",
+            "user": user,
             "access_token": access_token,
-            "user": user
+            "is_valid": True
         }
 
     @staticmethod
@@ -57,7 +63,11 @@ class UserService:
 
         # Kiểm tra xem email đã tồn tại chưa
         if users.find_one({"email": register.email}):
-            raise HTTPException(status_code=400, detail="Email already exists")
+            return {
+                "message": "Email đã tồn tại",
+                "_id": None,
+                "is_valid": False
+            }
 
         # hash password
         hashed_password = hash_password(register.password)
@@ -72,8 +82,9 @@ class UserService:
         result = users.insert_one(user_data)
 
         return {
-            "message": "register success",
-            "_id": str(result.inserted_id)
+            "message": "Đăng ký thành công",
+            "_id": str(result.inserted_id),
+            "is_valid": True
         }
 
     @staticmethod
@@ -88,7 +99,10 @@ class UserService:
         
         user = users.find_one({"email": request.email})
         if not user:
-            raise HTTPException(status_code=404, detail="Email not found")
+            return {
+                "message": "Email không tồn tại",
+                "is_valid": False
+            }
 
         otp = generate_otp()
         expires_at = datetime.now() + timedelta(minutes=3)
@@ -102,10 +116,14 @@ class UserService:
         otps.insert_one(otp_data)
 
         if not send_otp_email(request.email, otp):
-            raise HTTPException(status_code=500, detail="Gửi OTP thất bại")
+            return {
+                "message": "Gửi OTP thất bại",
+                "is_valid": False
+            }
 
         return {
-            "message": "OTP gửi thành công"
+            "message": "Gửi OTP thành công",
+            "is_valid": True
         }
 
     @staticmethod
@@ -149,7 +167,16 @@ class UserService:
         )
 
         if not otp_record:
-            raise HTTPException(status_code=400, detail="Mã OTP không hợp lệ hoặc đã hết hạn")
+            return {
+                "message": "Mã OTP không hợp lệ hoặc đã hết hạn",
+                "is_valid": False
+            }
+        
+        if(request.newPassword != request.confirmPassword):
+            return {
+                "message": "Mật khẩu không khớp",
+                "is_valid": False
+            }   
     
         hashedPassword = hash_password(request.newPassword)
 
@@ -161,5 +188,6 @@ class UserService:
         otps.delete_one({"_id": otp_record["_id"]})
 
         return {
-            "message": "Đặt lại mật khẩu thành công"
+            "message": "Đặt lại mật khẩu thành công",
+            "is_valid": True
         }

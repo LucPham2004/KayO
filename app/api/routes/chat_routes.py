@@ -1,7 +1,10 @@
 import asyncio
+import json
+import re
 from typing import AsyncGenerator
 
 import google.generativeai as genai
+import requests
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -12,9 +15,11 @@ from app.services.message_service import MessageService
 
 chat_bp = APIRouter()
 
+AIML_API_KEY = Config.AIML_API_KEY
 GEMINI_API_KEY = Config.GEMINI_API_KEY
-genai.configure(api_key=GEMINI_API_KEY)
+DEEPSEEK_API_KEY = Config.DEEPSEEK_API_KEY
 
+genai.configure(api_key=GEMINI_API_KEY)
 model = genai.GenerativeModel("gemini-2.0-flash")
 chat = model.start_chat(history=[])
 
@@ -28,11 +33,12 @@ async def generate_response_stream(prompt: str) -> AsyncGenerator[str, None]:
         yield chunk.text
 
 
-@chat_bp.post("/chat")
+@chat_bp.post("/gemini/chat")
 def chat_with_gemini(q: Question):
     try:
         # Lấy lịch sử 10 tin nhắn gần nhất của cuộc hội thoại
         history = MessageService.get_history(q.conv_id)
+        history.reverse()
 
         # Chuyển lịch sử tin nhắn thành một chuỗi hội thoại
         history_str = "\n".join([f"{msg['question']} → {msg['answer']}" for msg in history])
@@ -55,11 +61,12 @@ def chat_with_gemini(q: Question):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@chat_bp.post("/chat/stream")
+@chat_bp.post("/gemini/stream")
 async def stream_chat_with_gemini(q: Question):
     try:
         # Lấy lịch sử 10 tin nhắn gần nhất của cuộc hội thoại
         history = MessageService.get_history(q.conv_id)
+        history.reverse()
 
         # Chuyển lịch sử tin nhắn thành một chuỗi hội thoại
         gemini_history = []
@@ -68,16 +75,23 @@ async def stream_chat_with_gemini(q: Question):
             gemini_history.append({"role": "model", "parts": [msg["answer"]]})
 
         chat = model.start_chat(history=gemini_history)
-
-        # Gửi câu hỏi và lấy toàn bộ câu trả lời
         response = chat.send_message(q.question)
         full_answer = response.text
 
-        # Gửi từng ký tự một, mô phỏng typing ~30 ký tự/giây
+        words = re.findall(r'\S+|\n', full_answer)  # Giữ dấu xuống dòng riêng
+
         async def generate():
-            for char in full_answer:
-                yield char.encode("utf-8")
-                await asyncio.sleep(1 / 200)
+            buffer = []
+            for word in words:
+                buffer.append(word)
+                if len(buffer) >= 1:
+                    chunk = ' '.join(buffer) + ' '
+                    yield chunk.encode("utf-8")
+                    buffer.clear()
+                    await asyncio.sleep(0.04)  # 25 từ mỗi giây
+
+            if buffer:
+                yield (' '.join(buffer)).encode("utf-8")
 
             # Lưu lại câu hỏi và câu trả lời
             MessageService.create_message(
@@ -88,3 +102,137 @@ async def stream_chat_with_gemini(q: Question):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@chat_bp.post("/llama/stream")
+async def stream_chat_with_llama(request: Question):
+    try:
+        history = MessageService.get_history(request.conv_id)
+        history.reverse()
+
+        messages = []
+        for msg in history:
+            messages.append({
+                "role": "user",
+                "content": msg["question"]
+            })
+            messages.append({
+                "role": "assistant",
+                "content": msg["answer"]
+            })
+
+        # Thêm câu hỏi mới nhất
+        messages.append({
+            "role": "user",
+            "content": request.question
+        })
+
+        response = requests.post(
+            url="https://openrouter.ai/api/v1/chat/completions",
+            headers={
+                "Authorization": "Bearer " + DEEPSEEK_API_KEY,
+                "Content-Type": "application/json",
+            },
+            data=json.dumps({
+                "model": "meta-llama/llama-4-maverick:free",
+                "messages": messages,
+            })
+        )
+
+        parsed = response.json()
+        full_answer = parsed["choices"][0]["message"]["content"]
+
+        words = re.findall(r'\S+|\n', full_answer)
+
+        async def generate():
+            buffer = []
+            for word in words:
+                buffer.append(word)
+                if len(buffer) >= 1:
+                    chunk = ' '.join(buffer) + ' '
+                    yield chunk.encode("utf-8")
+                    buffer.clear()
+                    await asyncio.sleep(0.04)  # 25 từ mỗi giây
+
+            if buffer:
+                yield (' '.join(buffer)).encode("utf-8")
+
+            MessageService.create_message(
+                CreateMessageSchema(conversation_id=request.conv_id, question=request.question, answer=full_answer)
+            )
+
+        return StreamingResponse(generate(), media_type="text/event-stream")
+
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"Error communicating with the AIML API: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
+
+
+@chat_bp.post("/deepseek/stream")
+async def stream_chat_with_deepseek(request: Question):
+    try:
+
+        history = MessageService.get_history(request.conv_id)
+        history.reverse()
+
+        messages = []
+        for msg in history:
+            messages.append({
+                "role": "user",
+                "content": msg["question"]
+            })
+            messages.append({
+                "role": "assistant",
+                "content": msg["answer"]
+            })
+
+        # Thêm câu hỏi mới nhất
+        messages.append({
+            "role": "user",
+            "content": request.question
+        })
+
+        response = requests.post(
+            url="https://openrouter.ai/api/v1/chat/completions",
+            headers={
+                "Authorization": "Bearer " + DEEPSEEK_API_KEY,
+                "Content-Type": "application/json",
+            },
+            data=json.dumps({
+                "model": "deepseek/deepseek-r1:free",
+                "messages": messages,
+
+            })
+        )
+
+        parsed = response.json()
+        full_answer = parsed["choices"][0]["message"]["content"]
+
+        words = re.findall(r'\S+|\n', full_answer)  # Giữ dấu xuống dòng riêng
+
+        async def generate():
+            buffer = []
+            for word in words:
+                buffer.append(word)
+                if len(buffer) >= 1:
+                    chunk = ' '.join(buffer) + ' '
+                    yield chunk.encode("utf-8")
+                    buffer.clear()
+                    await asyncio.sleep(0.04)  # 25 từ mỗi giây
+
+            if buffer:
+                yield (' '.join(buffer)).encode("utf-8")
+
+            MessageService.create_message(
+                CreateMessageSchema(conversation_id=request.conv_id, question=request.question, answer=full_answer)
+            )
+
+        return StreamingResponse(generate(), media_type="text/event-stream")
+
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+

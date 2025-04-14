@@ -20,5 +20,4 @@ class ConversationResponseSchema(BaseModel):
         allow_population_by_field_name = True
 
 class UpdateConversationSchema(BaseModel):
-    name: str | None = None
-    update_at: Optional[str]
+    name: str

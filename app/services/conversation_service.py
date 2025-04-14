@@ -69,6 +69,34 @@ class ConversationService:
         return user_conversations
 
     @staticmethod
+    def search_conversations_by_keyword(user_id: str, keyword: str):
+        db = MongoDB.get_db()
+        users: Collection = db["users"]
+
+        try:
+            user_obj_id = ObjectId(user_id)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid ID format")
+
+        user = users.find_one({"_id": user_obj_id})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        db_conversations: Collection = db["conversations"]
+
+        query = {
+            "user_id": user_id,
+            "name": {"$regex": keyword, "$options": "i"}
+        }
+
+        matched_conversations = db_conversations.find(query).to_list(length=None)
+
+        for conv in matched_conversations:
+            conv["_id"] = str(conv["_id"])
+
+        return matched_conversations
+
+    @staticmethod
     def get_conversations():
         db = MongoDB.get_db()
         db_conversations: Collection = db["conversations"]
@@ -89,9 +117,11 @@ class ConversationService:
         except Exception:
             raise HTTPException(status_code=400, detail="Invalid conversation ID format")
 
-        update_data["updated_at"] = datetime.now().isoformat()
+        conversation = conversations.find_one({"_id": obj_id})
+        conversation["name"] = update_data["name"]
+        conversation["updated_at"] = datetime.now().isoformat()
 
-        result = conversations.update_one({"_id": obj_id}, {"$set": update_data})
+        result = conversations.update_one({"_id": obj_id}, {"$set": conversation})
 
         if result.matched_count == 0:
             raise HTTPException(status_code=404, detail=f"Conversation with id: {id} not found")

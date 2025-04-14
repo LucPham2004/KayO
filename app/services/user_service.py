@@ -40,6 +40,35 @@ class UserService:
         return users
 
     @staticmethod
+    def search_users_by_keyword(keyword: str):
+        db = MongoDB.get_db()
+        users: Collection = db["users"]
+
+        try:
+            obj_id = ObjectId(keyword)
+            id_query = {"_id": obj_id}
+        except Exception:
+            id_query = None
+
+        query = {
+            "$or": [
+                {"username": {"$regex": keyword, "$options": "i"}},
+                {"email": {"$regex": keyword, "$options": "i"}}
+            ]
+        }
+
+        # Nếu keyword có thể chuyển thành ObjectId thì thêm vào điều kiện tìm kiếm
+        if id_query:
+            query["$or"].append(id_query)
+
+        matched_users = users.find(query).to_list(length=None)
+
+        for user in matched_users:
+            user["_id"] = str(user["_id"])
+
+        return matched_users
+
+    @staticmethod
     def update_user(id: str, update_data: dict):
         db = MongoDB.get_db()
         users: Collection = db["users"]

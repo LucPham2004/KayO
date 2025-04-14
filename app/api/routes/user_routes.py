@@ -15,6 +15,10 @@ def get_user_by_id(user_id: str):
 def get_users():
     return UserService.get_users()
 
+@user_bp.get("/search", response_model=List[UserResponseSchema])
+def search_users(keyword: str):
+    return UserService.search_users_by_keyword(keyword)
+
 @user_bp.put("/{user_id}", response_model=UserResponseSchema)
 def update_user(user_id: str, update_data: UpdateUserSchema):
     return UserService.update_user(user_id, update_data.model_dump(exclude_unset=True))

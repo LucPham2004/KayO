@@ -15,9 +15,8 @@ from app.services.message_service import MessageService
 
 chat_bp = APIRouter()
 
-AIML_API_KEY = Config.AIML_API_KEY
 GEMINI_API_KEY = Config.GEMINI_API_KEY
-DEEPSEEK_API_KEY = Config.DEEPSEEK_API_KEY
+OPENROUTER_API_KEY = Config.OPENROUTER_API_KEY
 
 genai.configure(api_key=GEMINI_API_KEY)
 model = genai.GenerativeModel("gemini-2.0-flash")
@@ -130,7 +129,7 @@ async def stream_chat_with_llama(request: Question):
         response = requests.post(
             url="https://openrouter.ai/api/v1/chat/completions",
             headers={
-                "Authorization": "Bearer " + DEEPSEEK_API_KEY,
+                "Authorization": "Bearer " + OPENROUTER_API_KEY,
                 "Content-Type": "application/json",
             },
             data=json.dumps({
@@ -196,13 +195,12 @@ async def stream_chat_with_deepseek(request: Question):
         response = requests.post(
             url="https://openrouter.ai/api/v1/chat/completions",
             headers={
-                "Authorization": "Bearer " + DEEPSEEK_API_KEY,
+                "Authorization": "Bearer " + OPENROUTER_API_KEY,
                 "Content-Type": "application/json",
             },
             data=json.dumps({
                 "model": "deepseek/deepseek-r1:free",
                 "messages": messages,
-
             })
         )
 

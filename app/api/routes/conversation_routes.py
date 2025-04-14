@@ -16,6 +16,10 @@ def create_conversation(conv: CreateConversationSchema):
 def get_conversations_by_user(user_id: str):
     return ConversationService.get_conversations_by_user(user_id)
 
+@conv_bp.get("/search/{user_id}", response_model=List[ConversationResponseSchema])
+def search_conversations(user_id: str, keyword: str):
+    return ConversationService.search_conversations_by_keyword(user_id, keyword)
+
 @conv_bp.get("/all", response_model=List[ConversationResponseSchema])
 def get_conversations():
     return ConversationService.get_conversations()

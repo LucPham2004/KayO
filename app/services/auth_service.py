@@ -10,7 +10,8 @@ from app.schemas.auth_schema import (
     RegisterSchema, 
     ForgotPasswordSchema,
     VerifyOTPSchema,
-    ResetPasswordSchema
+    ResetPasswordSchema,
+    ChangePasswordSchema
 )
 from app.utils.auth_utils import (
     verify_password, 
@@ -248,5 +249,64 @@ class UserService:
             return {
                 "message": "Có lỗi xảy ra khi lấy thông tin tài khoản",
                 "user": None,
+                "is_valid": False
+            }
+
+    @staticmethod
+    def change_password(request: ChangePasswordSchema, authorization: str):
+        # Kiểm tra và lấy token từ header
+        if not authorization or not authorization.startswith("Bearer "):
+            return {
+                "message": "Token không hợp lệ",
+                "is_valid": False
+            }
+        
+        try:
+            token = authorization.split(" ")[1]
+            
+            # Decode token
+            payload = decode_token(token)
+            if not payload:
+                return {
+                    "message": "Token không hợp lệ hoặc đã hết hạn",
+                    "is_valid": False
+                }
+            
+            # Lấy thông tin user từ database
+            db = MongoDB.get_db()
+            users: Collection = db["users"]
+            
+            user = users.find_one({"_id": ObjectId(payload["sub"])})
+            if not user:
+                return {
+                    "message": "Người dùng không tồn tại",
+                    "is_valid": False
+                }
+            
+            # Kiểm tra mật khẩu hiện tại
+            if not verify_password(request.current_password, user["password"]):
+                return {
+                    "message": "Mật khẩu hiện tại không chính xác",
+                    "is_valid": False
+                }
+            
+            # Hash mật khẩu mới
+            hashed_password = hash_password(request.new_password)
+            
+            # Cập nhật mật khẩu mới
+            users.update_one(
+                {"_id": ObjectId(payload["sub"])},
+                {"$set": {"password": hashed_password}}
+            )
+            
+            return {
+                "message": "Đổi mật khẩu thành công",
+                "is_valid": True
+            }
+            
+        except Exception as e:
+            print(f"Error in change_password: {str(e)}")
+            return {
+                "message": "Có lỗi xảy ra khi đổi mật khẩu",
                 "is_valid": False
             }

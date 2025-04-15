@@ -67,3 +67,18 @@ class GetAccountResponseSchema(BaseModel):
     message: str
     user: Optional[UserSchema] = None
     is_valid: bool
+
+class ChangePasswordSchema(BaseModel):
+    current_password: str
+    new_password: str = Field(..., min_length=6)
+    confirm_password: str = Field(..., min_length=6)
+
+    @model_validator(mode='after')
+    def check_passwords_match(self):
+        if self.new_password != self.confirm_password:
+            raise ValueError('Mật khẩu mới không khớp')
+        return self
+
+class ChangePasswordResponseSchema(BaseModel):
+    message: str
+    is_valid: bool

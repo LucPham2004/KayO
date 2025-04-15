@@ -9,7 +9,9 @@ from app.schemas.auth_schema import (
     VerifyOTPResponseSchema,
     ResetPasswordSchema,
     ResetPasswordResponseSchema,
-    GetAccountResponseSchema
+    GetAccountResponseSchema,
+    ChangePasswordSchema,
+    ChangePasswordResponseSchema
 )
 from app.services.auth_service import UserService
 
@@ -40,3 +42,9 @@ def get_account(authorization: str = Header(None)):
     if not authorization:
         raise HTTPException(status_code=401, detail="Authorization header is missing")
     return UserService.get_account(authorization)
+
+@auth_bp.patch("/change-password", response_model=ChangePasswordResponseSchema)
+def change_password(request: ChangePasswordSchema, authorization: str = Header(None)):
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Authorization header is missing")
+    return UserService.change_password(request, authorization)

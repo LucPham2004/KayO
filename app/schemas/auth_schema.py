@@ -20,9 +20,12 @@ class LoginSchema(BaseModel):
 
 
 class UserSchema(BaseModel):
-    _id: str
+    id: str = Field(..., alias="_id")
     email: str
     username: str
+
+    class Config:
+        populate_by_name = True
 
 class LoginResponseSchema(BaseModel):
     message: str
@@ -58,4 +61,9 @@ class ResetPasswordSchema(BaseModel):
 
 class ResetPasswordResponseSchema(BaseModel):
     message: str
+    is_valid: bool
+
+class GetAccountResponseSchema(BaseModel):
+    message: str
+    user: Optional[UserSchema] = None
     is_valid: bool

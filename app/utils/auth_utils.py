@@ -22,13 +22,9 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     SECRET_KEY = Config.SECRET_KEY
     ALGORITHM = "HS256"
 
-    """Tạo JWT token với dữ liệu và thời gian hết hạn."""
+    """Tạo JWT token với dữ liệu."""
     to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.now() + expires_delta
-    else:
-        expire = datetime.now() + timedelta(minutes=15)  # Mặc định 15 phút
-    to_encode.update({"exp": expire})
+    # Bỏ phần thêm thời gian hết hạn
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
@@ -64,3 +60,13 @@ def send_otp_email(email: str, otp: str):
     except Exception as e:
         print(f"Gửi OTP thất bại: {str(e)}")
         return False
+
+def decode_token(token: str):
+    SECRET_KEY = Config.SECRET_KEY
+    ALGORITHM = "HS256"
+    
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except jwt.JWTError:
+        return None

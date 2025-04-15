@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta
 
-from fastapi import HTTPException
+from fastapi import HTTPException, Header
 from app.config.database import MongoDB
 from pymongo.collection import Collection
+from bson.objectid import ObjectId
 
 from app.schemas.auth_schema import (
     LoginSchema, 
@@ -16,7 +17,8 @@ from app.utils.auth_utils import (
     create_access_token, 
     hash_password, 
     generate_otp, 
-    send_otp_email
+    send_otp_email,
+    decode_token
 )
 
 
@@ -27,7 +29,6 @@ class UserService:
         users: Collection = db["users"]
 
         user = users.find_one({"email": login.email})
-
         if not user or not verify_password(login.password, user['password']):
             return {
                 "message": "Email hoặc mật khẩu không chính xác!",
@@ -37,21 +38,25 @@ class UserService:
             }
 
         # Tạo dữ liệu user để trả về
-        user["_id"] = str(user["_id"])
-        user.pop("password")
-
-        # Tạo JWT token
-        token_data = {
-            "sub": user["_id"],
+        user_data = {
+            "id": str(user["_id"]),  # Chuyển ObjectId sang string
             "email": user["email"],
             "username": user["username"]
         }
 
-        access_token_expires = timedelta(minutes=30)
-        access_token = create_access_token(token_data, access_token_expires)
+        # Tạo JWT token
+        token_data = {
+            "sub": user_data["id"],
+            "email": user_data["email"],
+            "username": user_data["username"]
+        }
+
+        # Tạo token không có thời hạn
+        access_token = create_access_token(token_data)
+
         return {
             "message": "Đăng nhập thành công",
-            "user": user,
+            "user": user_data,
             "access_token": access_token,
             "is_valid": True
         }
@@ -191,3 +196,57 @@ class UserService:
             "message": "Đặt lại mật khẩu thành công",
             "is_valid": True
         }
+
+    @staticmethod
+    def get_account(authorization: str):
+        # Kiểm tra và lấy token từ header
+        if not authorization or not authorization.startswith("Bearer "):
+            return {
+                "message": "Token không hợp lệ",
+                "user": None,
+                "is_valid": False
+            }
+        
+        try:
+            token = authorization.split(" ")[1]
+            
+            # Decode token
+            payload = decode_token(token)
+            if not payload:
+                return {
+                    "message": "Token không hợp lệ hoặc đã hết hạn",
+                    "user": None,
+                    "is_valid": False
+                }
+            
+            # Lấy thông tin user từ database
+            db = MongoDB.get_db()
+            users: Collection = db["users"]
+            
+            user = users.find_one({"_id": ObjectId(payload["sub"])})
+            if not user:
+                return {
+                    "message": "Người dùng không tồn tại",
+                    "user": None,
+                    "is_valid": False
+                }
+            
+            # Tạo dữ liệu user để trả về
+            user_data = {
+                "id": str(user["_id"]),
+                "email": user["email"],
+                "username": user["username"]
+            }
+            
+            return {
+                "message": "Lấy thông tin tài khoản thành công",
+                "user": user_data,
+                "is_valid": True
+            }
+        except Exception as e:
+            print(f"Error in get_account: {str(e)}")
+            return {
+                "message": "Có lỗi xảy ra khi lấy thông tin tài khoản",
+                "user": None,
+                "is_valid": False
+            }

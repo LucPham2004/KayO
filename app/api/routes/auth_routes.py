@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Header, HTTPException
 from app.schemas.auth_schema import (
     RegisterSchema, 
     LoginSchema, 
@@ -8,7 +8,8 @@ from app.schemas.auth_schema import (
     VerifyOTPSchema,
     VerifyOTPResponseSchema,
     ResetPasswordSchema,
-    ResetPasswordResponseSchema
+    ResetPasswordResponseSchema,
+    GetAccountResponseSchema
 )
 from app.services.auth_service import UserService
 
@@ -33,3 +34,9 @@ def verify_otp(request: VerifyOTPSchema):
 @auth_bp.post("/reset-password", response_model=ResetPasswordResponseSchema)
 def reset_password(request: ResetPasswordSchema):
     return UserService.reset_password(request)
+
+@auth_bp.get("/getAccount", response_model=GetAccountResponseSchema)
+def get_account(authorization: str = Header(None)):
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Authorization header is missing")
+    return UserService.get_account(authorization)

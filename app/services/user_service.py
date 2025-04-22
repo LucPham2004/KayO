@@ -28,11 +28,32 @@ class UserService:
         return user
 
     @staticmethod
-    def get_users():
+    def get_all():
         db = MongoDB.get_db()
         db_users: Collection = db["users"]
-
         users = db_users.find().to_list(length=None)
+
+        for user in users:
+            user["_id"] = str(user["_id"])
+
+        return users
+
+    @staticmethod
+    def get_role_user():
+        db = MongoDB.get_db()
+        db_users: Collection = db["users"]
+        users = db_users.find({"role": "USER"}).to_list(length=None)
+
+        for user in users:
+            user["_id"] = str(user["_id"])
+
+        return users
+
+    @staticmethod
+    def get_admins():
+        db = MongoDB.get_db()
+        db_users: Collection = db["users"]
+        users = db_users.find({"role": "ADMIN"}).to_list(length=None)
 
         for user in users:
             user["_id"] = str(user["_id"])
@@ -78,7 +99,7 @@ class UserService:
         except Exception:
             raise HTTPException(status_code=400, detail="Invalid user ID format")
 
-        update_data["updated_at"] = datetime.now().isoformat()
+        update_data["update_at"] = datetime.now().isoformat()
 
         result = users.update_one({"_id": obj_id}, {"$set": update_data})
 

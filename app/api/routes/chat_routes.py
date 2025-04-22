@@ -77,7 +77,7 @@ async def stream_chat_with_gemini(q: Question):
         response = chat.send_message(q.question)
         full_answer = response.text
 
-        words = re.findall(r'\S+|\n', full_answer)  # Giữ dấu xuống dòng riêng
+        words = re.findall(r'(\s*\S+|\n)', full_answer)
 
         async def generate():
             buffer = []
@@ -141,7 +141,7 @@ async def stream_chat_with_llama(request: Question):
         parsed = response.json()
         full_answer = parsed["choices"][0]["message"]["content"]
 
-        words = re.findall(r'\S+|\n', full_answer)
+        words = re.findall(r'(\s*\S+|\n)', full_answer)
 
         async def generate():
             buffer = []
@@ -207,7 +207,7 @@ async def stream_chat_with_deepseek(request: Question):
         parsed = response.json()
         full_answer = parsed["choices"][0]["message"]["content"]
 
-        words = re.findall(r'\S+|\n', full_answer)  # Giữ dấu xuống dòng riêng
+        words = re.findall(r'(\s*\S+|\n)', full_answer)
 
         async def generate():
             buffer = []

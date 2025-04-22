@@ -1,23 +1,22 @@
 from datetime import datetime, timedelta
 
-from fastapi import HTTPException, Header
-from app.config.database import MongoDB
-from pymongo.collection import Collection
 from bson.objectid import ObjectId
+from pymongo.collection import Collection
 
+from app.config.database import MongoDB
 from app.schemas.auth_schema import (
-    LoginSchema, 
-    RegisterSchema, 
+    LoginSchema,
+    RegisterSchema,
     ForgotPasswordSchema,
     VerifyOTPSchema,
     ResetPasswordSchema,
     ChangePasswordSchema
 )
 from app.utils.auth_utils import (
-    verify_password, 
-    create_access_token, 
-    hash_password, 
-    generate_otp, 
+    verify_password,
+    create_access_token,
+    hash_password,
+    generate_otp,
     send_otp_email,
     decode_token
 )
@@ -82,7 +81,9 @@ class UserService:
             "email": register.email,
             "username": register.username,
             "password": hashed_password,
-            "created_at": datetime.now().isoformat()
+            "role": "USER",
+            "created_at": datetime.now().isoformat(),
+            "update_at": datetime.now().isoformat()
         }
 
         result = users.insert_one(user_data)

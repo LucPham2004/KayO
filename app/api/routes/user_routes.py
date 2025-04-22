@@ -7,13 +7,21 @@ from app.services.user_service import UserService
 
 user_bp = APIRouter()
 
-@user_bp.get("/{user_id}", response_model=UserResponseSchema)
+@user_bp.get("", response_model=UserResponseSchema)
 def get_user_by_id(user_id: str):
     return UserService.get_user_by_id(user_id)
 
 @user_bp.get("/all", response_model=List[UserResponseSchema])
-def get_users():
-    return UserService.get_users()
+def get_all():
+    return UserService.get_all()
+
+@user_bp.get("/role/user", response_model=List[UserResponseSchema])
+def get_role_user():
+    return UserService.get_role_user()
+
+@user_bp.get("/role/admin", response_model=List[UserResponseSchema])
+def get_admins():
+    return UserService.get_admins()
 
 @user_bp.get("/search", response_model=List[UserResponseSchema])
 def search_users(keyword: str):

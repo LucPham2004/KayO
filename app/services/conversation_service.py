@@ -119,7 +119,7 @@ class ConversationService:
 
         conversation = conversations.find_one({"_id": obj_id})
         conversation["name"] = update_data["name"]
-        conversation["updated_at"] = datetime.now().isoformat()
+        conversation["update_at"] = datetime.now().isoformat()
 
         result = conversations.update_one({"_id": obj_id}, {"$set": conversation})
 

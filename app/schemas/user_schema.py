@@ -27,5 +27,7 @@ class UserResponseSchema(BaseModel):
 
 class UpdateUserSchema(BaseModel):
     email: str | None = None
+    username: str| None = None
+    role: str | None = None
     avatar_url: str | None = None
     update_at: Optional[str]

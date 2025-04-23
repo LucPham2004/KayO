@@ -23,6 +23,7 @@ class UserSchema(BaseModel):
     id: str = Field(..., alias="_id")
     email: str
     username: str
+    role: str
 
     class Config:
         populate_by_name = True

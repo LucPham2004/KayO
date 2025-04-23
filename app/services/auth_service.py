@@ -41,7 +41,8 @@ class UserService:
         user_data = {
             "id": str(user["_id"]),  # Chuyển ObjectId sang string
             "email": user["email"],
-            "username": user["username"]
+            "username": user["username"],
+            "role" : user["role"]
         }
 
         # Tạo JWT token
@@ -237,6 +238,7 @@ class UserService:
             user_data = {
                 "id": str(user["_id"]),
                 "email": user["email"],
+                "role": user["role"],
                 "username": user["username"]
             }
             
